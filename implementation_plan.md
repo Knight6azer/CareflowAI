@@ -1,121 +1,105 @@
-# CareFlow AI — End-to-End Healthcare Python Application
+# CareFlow AI — Architectural Implementation & Integration Guide
 
-Build a premium, healthcare-oriented Python application featuring a **Streamlit dashboard** frontend with a **FastAPI** backend, dark-themed medical UI, and modular AI pipeline architecture.
+CareFlow AI is an end-to-end healthcare intelligence platform featuring a **modern React 19 + Tailwind CSS** multilingual frontend, integrated **Optical Character Recognition (OCR)** ingestion, a **strict clinical CBC validation firewall** (`ml/cbc_validator.py`), and a non-diagnostic patient health literacy engine.
 
-## Architecture Overview
+---
+
+## 🏛️ System Architecture
 
 ```mermaid
 graph TB
-    subgraph Frontend["🖥️ Streamlit Dashboard"]
-        A["Dashboard Home"] --> B["Patient Management"]
-        A --> C["Medical Imaging AI"]
-        A --> D["Analytics & Reports"]
-        A --> E["AI Chat Assistant"]
+    subgraph Client["🖥️ Multilingual Frontend (React 19 + Vite)"]
+        UI1["Landing Page & Hero Visual"]
+        UI2["Camera & PDF Ingestion Scanner"]
+        UI3["Biomarker Explorer & Visual Gauge Cards"]
+        UI4["Language Switcher (EN, HI, ES, FR, DE, BN)"]
+        UI5["My Reports History & Filtering"]
     end
-    
-    subgraph Backend["⚙️ FastAPI Backend"]
-        F["REST API Routes"]
-        G["AI/ML Pipeline"]
-        H["Data Services"]
+
+    subgraph ML["🔬 ML & Clinical Validation Engine (Python)"]
+        OCR["PaddleOCR Text Extraction (ml/ocr/ocr_test.py)"]
+        PARSER["Regex Tokenizer & Parser (ml/ocr/report_parser.py)"]
+        SCHEMA["Typed CBC Schema (ml/cbc_schema.py)"]
+        VALIDATOR["Physical Bounds & Outlier Firewall (ml/cbc_validator.py)"]
     end
-    
-    subgraph Data["💾 Data Layer"]
-        I["SQLite Database"]
-        J["Sample DICOM/Images"]
+
+    subgraph Data["💾 Reference Datasets"]
+        DATASET["Cleaned CBC Dataset (Dataset/careflow_cbc_clean.csv)"]
     end
-    
-    Frontend -->|HTTP API| Backend
-    Backend --> Data
+
+    Client -->|Upload / Scan Document| OCR
+    OCR --> PARSER
+    PARSER --> SCHEMA
+    SCHEMA --> VALIDATOR
+    VALIDATOR -->|Validation Result| Client
+    VALIDATOR -.->|Audits & Benchmarks| DATASET
 ```
 
-## Design Language
+---
 
-| Attribute | Value |
+## 🎨 Design Language & Aesthetic
+
+| Attribute | Specification |
 |:---|:---|
-| **Primary Color** | `#00D4AA` (Medical Teal/Cyan) |
-| **Accent** | `#7C5CFC` (Soft Violet) |
-| **Background** | `#0A0E1A` → `#111827` (Deep Space Dark) |
-| **Cards** | `#1A1F2E` with subtle `rgba(0,212,170,0.08)` glow borders |
-| **Font** | Inter (headings), IBM Plex Sans (body) |
-| **Aesthetic** | Glassmorphism + subtle neon accents, medical iconography |
+| **Primary Theme** | Clean Medical Teal (`#0D9488` / `#0F766E`) with Slate/Cyan Neutrals |
+| **Warning / Attention** | Amber Alert (`#D97706` / `#78350F`) |
+| **Normal / Safe** | Emerald Health (`#059669` / `#065F46`) |
+| **Critical / Outlier** | Rose Review (`#E11D48`) |
+| **Typography** | Plus Jakarta Sans (Headings), Inter (Body) |
+| **Aesthetic** | Clinical clarity, glassmorphism, responsive viewfinders, high accessibility |
 
 ---
 
-## 12-Phase Implementation Plan
+## 📋 Completed Implementation Phases
 
-We will implement this project in 12 distinct, detail-oriented phases:
+### Phase 1: Clean Git Foundation & Dependency Configuration
+- Unified `.gitignore` across JavaScript, Vite, Python, and OS artifacts.
+- Production configuration in `package.json` with React 19, Tailwind CSS v4, Lucide icons, and Oxlint.
 
-### Phase 1: Project Setup & Core Configuration
-- Create all project directories (`backend/`, `pages/`, `components/`, `utils/`, `data/`, `assets/`, `.streamlit/`).
-- Create `requirements.txt` with all necessary dependencies.
-- Create `.streamlit/config.toml` to define the baseline dark theme and font settings.
+### Phase 2: Typed Clinical Data Models & Bounds
+- Implemented `ml/cbc_schema.py` defining `CBCRecord`, `FieldValidationResult`, and `CBCValidationResult`.
+- Defined physiological upper and lower bounds for 16 primary Complete Blood Count markers.
 
-### Phase 2: Database Schema & Data Models
-- Define Pydantic models in `backend/models.py`.
-- Create SQLite initialization and connection logic in `utils/database.py`.
+### Phase 3: Validation Firewall & Outlier Preservation
+- Implemented `ml/cbc_validator.py` with numeric integrity checks, physical limits, and statistical IQR outlier detection.
+- Enforced ethical medical guidelines: acute outliers are tagged `OUTLIER_REVIEW` for doctor review rather than deleted.
 
-### Phase 3: Synthetic Data Generation
-- Develop `utils/sample_data.py` to generate realistic synthetic patients, vitals, and scan histories to populate the database.
+### Phase 4: OCR Engine & Report Parser Prototype
+- Implemented `ml/ocr/ocr_test.py` with PaddleOCR detection and confidence scoring.
+- Implemented `ml/ocr/report_parser.py` extracting lab aliases, split decimals, comma formats, and reference intervals.
 
-### Phase 4: Backend API Core
-- Set up the FastAPI server in `backend/api.py`.
-- Implement health checks and basic CORS configuration.
+### Phase 5: Reactive Multilingual System (i18n)
+- Implemented `src/context/LanguageContext.jsx` with persistent locale preferences.
+- Authored full translation dictionaries (`src/i18n/translations.js`) covering English, Hindi, Spanish, French, German, and Bengali.
+- Integrated sticky language dropdown in `src/components/Navbar.jsx`.
 
-### Phase 5: Theming & Core UI Components
-- Develop `utils/theme.py` to inject custom CSS (glassmorphism, medical aesthetics).
-- Create `components/sidebar.py` for custom navigation and branding.
+### Phase 6: Interactive Camera Scanner & File Ingestion
+- Implemented `src/components/CameraScanner.jsx` with real device webcam streaming, orientation switching, scanning laser beam animation, and mock document fallback.
+- Implemented `src/components/UploadArea.jsx` with drag-and-drop validation and 256-bit encryption indicators.
+- Added one-click sample report generator in `src/pages/ScanReport.jsx`.
 
-### Phase 6: Dashboard Home Page
-- Build `app.py`, the main entry point.
-- Implement the `components/metrics.py` for KPI cards and layout the overview dashboard.
+### Phase 7: Biomarker Explorer & Visual Gauges
+- Implemented `src/components/ParameterCard.jsx` featuring dynamic percentage markers and color-coded range zones (Low, Normal Target, High).
+- Added multi-tier parameter filtering (`All Tests`, `Needs Attention`, `Normal Range`) in `src/pages/ReportDetails.jsx`.
 
-### Phase 7: Patient Management (Backend + Frontend)
-- Implement backend CRUD operations for patients in `backend/services.py` and API routes.
-- Build `pages/1_🏥_Patient_Management.py` with data tables and detail views.
-
-### Phase 8: Medical Imaging AI Interface
-- Build `pages/2_🧠_Medical_Imaging.py` with drag-and-drop upload.
-- Implement mocked AI inference endpoints in the backend for processing X-Rays/Scans.
-
-### Phase 9: Analytics & Reporting Data
-- Implement data aggregation routes in the FastAPI backend.
-- Build `components/charts.py` for themed Plotly charts.
-
-### Phase 10: Analytics Dashboard
-- Build `pages/3_📊_Analytics.py` to render the interactive Plotly charts and exportable reports.
-
-### Phase 11: AI Assistant Chatbot
-- Implement a chat API route in the backend with simulated clinical reasoning.
-- Build `pages/4_🤖_AI_Assistant.py` for the conversational UI.
-
-### Phase 12: Final Integration & Polish
-- Connect all frontend components seamlessly with the FastAPI backend.
-- Run end-to-end tests, refine animations, fix edge cases, and finalize documentation.
+### Phase 8: Clinical Safety & Patient Empowerment
+- Implemented non-diagnostic disclaimers (`src/components/Disclaimer.jsx`).
+- Formulated clear doctor-discussion prompts and practical lifestyle considerations on every analyzed report.
 
 ---
 
-> [!IMPORTANT]
-> **This is a draft/demo application.** All AI inference is simulated with realistic mock data and delays. No real ML models are bundled — the architecture is designed so real models (PyTorch, TensorFlow, ONNX) can be plugged into `backend/services.py` later.
+## 🧪 Verification & Testing Commands
 
-## Verification Plan
-
-### Automated Tests
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# 1. Verify frontend build
+npm run build
 
-# Launch the Streamlit app
-streamlit run app.py
+# 2. Run CBC Validator unit tests
+python ml/cbc_validator.py
 
-# Launch the FastAPI backend (separate terminal)
-uvicorn backend.api:app --reload --port 8000
+# 3. Run OCR Parser test suite
+python ml/ocr/report_parser.py
+
+# 4. Run Dataset Audit
+python ml/analyze_dataset.py
 ```
-
-### Manual Verification
-- Verify Streamlit dashboard loads with premium dark healthcare theme
-- Navigate all 4 pages and confirm data renders
-- Test patient search/filter functionality
-- Upload a test image on the Medical Imaging page
-- Verify charts render with correct theming on Analytics page
-- Test the AI Assistant chat interface
-- Confirm FastAPI docs accessible at `http://localhost:8000/docs`
