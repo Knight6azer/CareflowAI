@@ -14,20 +14,28 @@ export default function ScanReport() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'upload' ? 'upload' : 'camera');
+  const isUploadParam = searchParams.get('tab') === 'upload';
+  const [userTab, setUserTab] = useState(null);
+  const activeTab = userTab || (isUploadParam ? 'upload' : 'camera');
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Sync tab with query param if present
+  // Revoke object URLs on change and unmount to prevent browser memory leaks
   useEffect(() => {
-    if (searchParams.get('tab') === 'upload') {
-      setActiveTab('upload');
-    }
-  }, [searchParams]);
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleFileSelected = (file) => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(file);
     if (file.type && file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
@@ -38,12 +46,18 @@ export default function ScanReport() {
   };
 
   const handleCameraCapture = (file, dataUrl) => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(file);
     setPreviewUrl(dataUrl);
     setCameraModalOpen(false);
   };
 
   const handleRemoveFile = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(null);
     setPreviewUrl(null);
   };
@@ -133,7 +147,7 @@ export default function ScanReport() {
 
                 {/* Option 2: Upload Report File */}
                 <div 
-                  onClick={() => setActiveTab('upload')}
+                  onClick={() => setUserTab('upload')}
                   className="bg-white rounded-2xl border-2 border-slate-200 hover:border-teal-500 p-6 sm:p-8 text-center cursor-pointer transition-all duration-200 shadow-2xs hover:shadow-md group flex flex-col justify-between"
                 >
                   <div>
@@ -153,7 +167,7 @@ export default function ScanReport() {
                     fullWidth
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveTab('upload');
+                      setUserTab('upload');
                     }}
                     icon={Upload}
                   >

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Activity, Menu, X, Shield, Sparkles, ArrowRight, LogIn, Globe, ChevronDown, Check } from 'lucide-react';
+import { Activity, Menu, X, LogIn, ChevronDown, Check } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import Button from './Button';
 import Modal from './Modal';

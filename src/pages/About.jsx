@@ -98,6 +98,29 @@ export default function About() {
 
       </div>
 
+      {/* Legal, Privacy & Compliance Transparency Notice (DPDPA 2023 / Healthcare Standards) */}
+      <Card className="border-slate-200 bg-white p-6 sm:p-8 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+            <Lock className="w-5 h-5 text-teal-600" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">
+            Privacy-by-Design & Compliance Transparency
+          </h2>
+        </div>
+        <div className="text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
+          <p>
+            <strong>Implemented Technical Safeguards:</strong> CareFlow AI operates on a strictly client-orchestrated, on-demand analysis model with <em>zero permanent storage</em> of personal identifiable information (PII) or protected health information (PHI). Reports are processed ephemerally in browser memory and local session memory.
+          </p>
+          <p>
+            <strong>Indian Regulatory Context (DPDPA 2023):</strong> Under India&apos;s <em>Digital Personal Data Protection Act, 2023</em>, health data constitutes sensitive personal data requiring clear purpose specification and data minimization. CareFlow AI implements purpose-limited processing without monetization or cross-site tracking.
+          </p>
+          <p className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-xs italic">
+            <strong>Formal Notice:</strong> CareFlow AI does not make formal claims of statutory regulatory certification. Technical safeguards are implemented, documentation is transparently provided, and any prospective institutional or clinical deployment must undergo qualified legal review.
+          </p>
+        </div>
+      </Card>
+
       {/* CTA Box */}
       <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-xl">
         <h2 className="text-xl sm:text-3xl font-bold tracking-tight">

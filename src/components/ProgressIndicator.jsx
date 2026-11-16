@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, Loader2, FileSearch, Brain, Activity } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function ProgressIndicator({ onComplete }) {
   const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const translatedSteps = t('scan.steps');
   const stepLabels = Array.isArray(translatedSteps) && translatedSteps.length === 4
@@ -17,15 +22,13 @@ export default function ProgressIndicator({ onComplete }) {
         "Generating patient-friendly medical explanation"
       ];
 
-  const stepIcons = [FileSearch, Activity, Brain, Sparkles];
-
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(timer);
           setTimeout(() => {
-            if (onComplete) onComplete();
+            if (onCompleteRef.current) onCompleteRef.current();
           }, 600);
           return 100;
         }
@@ -38,7 +41,7 @@ export default function ProgressIndicator({ onComplete }) {
     }, 150);
 
     return () => clearInterval(timer);
-  }, [currentStep, onComplete]);
+  }, [currentStep]);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 max-w-lg mx-auto shadow-md">

@@ -181,7 +181,7 @@ export default function Home() {
                 {/* Floating Badge overlay */}
                 <div className="absolute -bottom-4 -left-4 bg-slate-900 text-white rounded-2xl p-3 shadow-lg flex items-center gap-2.5 text-xs font-medium border border-slate-800">
                   <ShieldCheck className="w-5 h-5 text-teal-400 shrink-0" />
-                  <span>HIPAA-Ready Architecture</span>
+                  <span>Clinical Safety Firewall</span>
                 </div>
 
               </div>

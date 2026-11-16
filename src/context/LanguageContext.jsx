@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { LANGUAGES, DEFAULT_LANGUAGE } from '../i18n/languages';
 import { TRANSLATIONS } from '../i18n/translations';
 
@@ -75,6 +75,7 @@ export function LanguageProvider({ children }) {
   );
 }
 
+// oxlint-disable-next-line react/only-export-components
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (!context) {

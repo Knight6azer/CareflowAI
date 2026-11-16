@@ -15,17 +15,45 @@ export default function UploadArea({ onFileSelected, selectedFile }) {
     if (!file) return;
     setErrorMessage('');
 
+    // 1. Check extension & declared MIME
     if (!acceptedTypes.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png)$/i)) {
       setErrorMessage(t('uploadArea.invalidTypeError', 'Please upload a valid document (PDF, JPG, JPEG, or PNG).'));
       return;
     }
 
+    // 2. Prevent path traversal or malicious filename characters
+    if (file.name.includes('..') || /[/\\]/.test(file.name)) {
+      setErrorMessage('Invalid filename detected. Please rename your document before uploading.');
+      return;
+    }
+
+    // 3. File size limit (15MB)
     if (file.size > 15 * 1024 * 1024) {
       setErrorMessage(t('uploadArea.sizeLimitError', 'File size exceeds maximum limit of 15MB.'));
       return;
     }
 
-    onFileSelected(file);
+    // 4. Client-side Magic Byte Inspection (verify file header)
+    const slice = file.slice(0, 8);
+    const reader = new FileReader();
+    reader.onloadend = (e) => {
+      if (!e.target || !e.target.result) return;
+      const arr = new Uint8Array(e.target.result);
+      const isPdf = arr[0] === 0x25 && arr[1] === 0x50 && arr[2] === 0x44 && arr[3] === 0x46; // %PDF
+      const isJpg = arr[0] === 0xff && arr[1] === 0xd8 && arr[2] === 0xff; // JPEG
+      const isPng = arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4e && arr[3] === 0x47; // PNG
+
+      if (!isPdf && !isJpg && !isPng) {
+        setErrorMessage(t('uploadArea.signatureError', 'File content does not match expected PDF/JPEG/PNG format. Corrupted or invalid file.'));
+        return;
+      }
+
+      onFileSelected(file);
+    };
+    reader.onerror = () => {
+      setErrorMessage('Failed to read uploaded file.');
+    };
+    reader.readAsArrayBuffer(slice);
   };
 
   const handleDragOver = (e) => {
@@ -124,7 +152,7 @@ export default function UploadArea({ onFileSelected, selectedFile }) {
             </span>
             <span>•</span>
             <span className="flex items-center gap-1 text-emerald-600 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" /> {t('uploadArea.encryptedBadge', '256-Bit Encrypted')}
+              <CheckCircle2 className="w-3.5 h-3.5" /> {t('uploadArea.privacyBadge', 'Private & Local Analysis')}
             </span>
           </div>
         </div>

@@ -28,11 +28,14 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = "ma
         aria-hidden="true"
       />
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         className={`relative bg-white rounded-2xl shadow-xl border border-slate-200 w-full ${maxWidth} overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-base font-bold text-slate-900">{title}</h3>
+          <h3 id="modal-title" className="text-base font-bold text-slate-900">{title}</h3>
           <button
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"

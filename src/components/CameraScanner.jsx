@@ -112,25 +112,45 @@ export default function CameraScanner({ onCapture, onClose }) {
     }
   };
 
+  const handleClose = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (onClose) onClose();
+  };
+
   const handleRetake = () => {
     setCapturedImage(null);
   };
 
   const handleUsePhoto = () => {
-    if (capturedImage) {
-      // Create a mock File object
-      const blobBin = atob(capturedImage.split(',')[1]);
-      const array = [];
+    if (!capturedImage) return;
+    try {
+      const parts = capturedImage.split(',');
+      const base64Data = parts[1] || parts[0];
+      const blobBin = atob(base64Data);
+      const array = new Uint8Array(blobBin.length);
       for (let i = 0; i < blobBin.length; i++) {
-        array.push(blobBin.charCodeAt(i));
+        array[i] = blobBin.charCodeAt(i);
       }
-      const file = new File([new Uint8Array(array)], "camera_scanned_report.jpg", { type: "image/jpeg" });
+      const file = new File([array], "camera_scanned_report.jpg", { type: "image/jpeg" });
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
       onCapture(file, capturedImage);
+    } catch (err) {
+      console.error("Failed to process captured image:", err);
+      setCapturedImage(null);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('camera.title', 'Camera Scan')}
+      className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex flex-col justify-between p-4 sm:p-6 overflow-hidden"
+    >
       {/* Top Bar */}
       <div className="flex items-center justify-between z-10">
         <div className="flex items-center gap-2 text-white">
@@ -138,7 +158,7 @@ export default function CameraScanner({ onCapture, onClose }) {
           <span className="font-semibold text-sm sm:text-base">{t('camera.title', 'Camera Scan')}</span>
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="p-2.5 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
           aria-label="Close scanner"
         >
@@ -245,7 +265,7 @@ export default function CameraScanner({ onCapture, onClose }) {
             </button>
 
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-3 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
               title="Cancel"
             >

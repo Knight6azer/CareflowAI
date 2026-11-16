@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Sparkles, Calendar, Building2, User, FileText, CheckCircle2, AlertTriangle, Printer, HelpCircle, Filter } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Sparkles, Calendar, Building2, CheckCircle2, Printer, HelpCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import ParameterCard from '../components/ParameterCard';
 import StatusBadge from '../components/StatusBadge';
 import Disclaimer from '../components/Disclaimer';
