@@ -100,6 +100,90 @@ PARAMETER_CONSTRAINTS = {
         "stat_min": 8.0,
         "stat_max": 48.9,   # IQR upper fence from careflow_cbc_clean.csv
     },
+    "rbc_count": {
+        "unit": "million/mcL",
+        "bio_min": 0.8,
+        "bio_max": 10.0,
+        "stat_min": 3.5,
+        "stat_max": 6.5,
+    },
+    "hematocrit": {
+        "unit": "%",
+        "bio_min": 8.0,
+        "bio_max": 75.0,
+        "stat_min": 28.0,
+        "stat_max": 56.0,
+    },
+    "mcv": {
+        "unit": "fL",
+        "bio_min": 40.0,
+        "bio_max": 150.0,
+        "stat_min": 75.0,
+        "stat_max": 105.0,
+    },
+    "mch": {
+        "unit": "pg",
+        "bio_min": 10.0,
+        "bio_max": 55.0,
+        "stat_min": 24.0,
+        "stat_max": 35.0,
+    },
+    "mchc": {
+        "unit": "g/dL",
+        "bio_min": 20.0,
+        "bio_max": 45.0,
+        "stat_min": 30.0,
+        "stat_max": 38.0,
+    },
+    "rdw_cv": {
+        "unit": "%",
+        "bio_min": 5.0,
+        "bio_max": 40.0,
+        "stat_min": 10.5,
+        "stat_max": 16.5,
+    },
+    "neutrophils": {
+        "unit": "%",
+        "bio_min": 0.0,
+        "bio_max": 100.0,
+        "stat_min": 35.0,
+        "stat_max": 82.0,
+    },
+    "lymphocytes": {
+        "unit": "%",
+        "bio_min": 0.0,
+        "bio_max": 100.0,
+        "stat_min": 15.0,
+        "stat_max": 52.0,
+    },
+    "monocytes": {
+        "unit": "%",
+        "bio_min": 0.0,
+        "bio_max": 40.0,
+        "stat_min": 1.0,
+        "stat_max": 14.0,
+    },
+    "eosinophils": {
+        "unit": "%",
+        "bio_min": 0.0,
+        "bio_max": 40.0,
+        "stat_min": 0.0,
+        "stat_max": 8.0,
+    },
+    "basophils": {
+        "unit": "%",
+        "bio_min": 0.0,
+        "bio_max": 20.0,
+        "stat_min": 0.0,
+        "stat_max": 3.0,
+    },
+    "mpv": {
+        "unit": "fL",
+        "bio_min": 3.5,
+        "bio_max": 30.0,
+        "stat_min": 6.5,
+        "stat_max": 13.5,
+    },
 }
 
 VALID_GENDER_VALUES = {"male", "female", "child", "m", "f", "boy", "girl", "other"}
@@ -311,8 +395,8 @@ def validate_cbc_record(record_input: Union[CBCRecord, Dict[str, Any]]) -> CBCVa
     gender_res = validate_gender(data.get("gender"))
     field_results["gender"] = gender_res
 
-    # Validate numerical fields
-    numerical_fields = [
+    # Validate primary numerical fields
+    core_numerical_fields = [
         "age",
         "hemoglobin_g_dl",
         "wbc_count",
@@ -320,15 +404,60 @@ def validate_cbc_record(record_input: Union[CBCRecord, Dict[str, Any]]) -> CBCVa
         "platelet_distribution_width",
     ]
 
-    for fname in numerical_fields:
+    for fname in core_numerical_fields:
         res = validate_numeric_field(fname, data.get(fname))
         field_results[fname] = res
+
+    # Validate any additional CBC parameters supplied in data (e.g. differential or indices)
+    for fname, val in data.items():
+        if fname not in field_results and fname in PARAMETER_CONSTRAINTS:
+            res = validate_numeric_field(fname, val)
+            field_results[fname] = res
+
+    # =========================================================================
+    # Clinical Consistency & Conservation Firewalls ("Impossible Combinations")
+    # =========================================================================
+    consistency_violations = []
+
+    # 1. Differential Leukocyte Count Conservation Check
+    diff_keys = ["neutrophils", "lymphocytes", "monocytes", "eosinophils", "basophils"]
+    if all(k in field_results and field_results[k].cleaned_value is not None for k in diff_keys):
+        diff_sum = sum(field_results[k].cleaned_value for k in diff_keys)
+        if diff_sum < 88.0 or diff_sum > 112.0:
+            msg = (
+                f"WBC differential percentages sum to {diff_sum:.1f}% "
+                f"(physiologically expected ~100% ± 10%). Potential OCR extraction mismatch."
+            )
+            consistency_violations.append(msg)
+            for k in diff_keys:
+                field_results[k].status = ValidationStatus.INVALID
+                field_results[k].message += f" [Differential sum failure: {diff_sum:.1f}%]"
+
+    # 2. Hematological Rule of Three (Hematocrit ≈ 3 * Hemoglobin)
+    if (
+        "hemoglobin_g_dl" in field_results
+        and "hematocrit" in field_results
+        and field_results["hemoglobin_g_dl"].cleaned_value is not None
+        and field_results["hematocrit"].cleaned_value is not None
+    ):
+        hb = field_results["hemoglobin_g_dl"].cleaned_value
+        hct = field_results["hematocrit"].cleaned_value
+        expected_hct = 3.0 * hb
+        if abs(hct - expected_hct) > 16.0:
+            msg = (
+                f"Hematocrit ({hct}%) severely contradicts Hemoglobin ({hb} g/dL). "
+                f"By hematological Rule of Three, expected HCT ≈ 3x Hb (~{expected_hct:.1f}% ± 6%). "
+                f"Potential OCR extraction error."
+            )
+            consistency_violations.append(msg)
+            field_results["hematocrit"].status = ValidationStatus.INVALID
+            field_results["hematocrit"].message += f" [Rule of Three contradiction with Hb: {hb} g/dL]"
 
     # Determine overall status according to severity hierarchy:
     # INVALID > MISSING > OUTLIER_REVIEW > VALID
     statuses = [res.status for res in field_results.values()]
 
-    if ValidationStatus.INVALID in statuses:
+    if ValidationStatus.INVALID in statuses or consistency_violations:
         overall_status = ValidationStatus.INVALID
         is_valid = False
         invalid_fields = [name for name, r in field_results.items() if r.status == ValidationStatus.INVALID]
@@ -336,6 +465,8 @@ def validate_cbc_record(record_input: Union[CBCRecord, Dict[str, Any]]) -> CBCVa
             f"Record contains invalid or corrupted values in: {', '.join(invalid_fields)}. "
             f"Check OCR transcription."
         )
+        if consistency_violations:
+            summary_messages.extend(consistency_violations)
     elif ValidationStatus.MISSING in statuses:
         overall_status = ValidationStatus.MISSING
         is_valid = True  # Technically valid data for present fields, but incomplete

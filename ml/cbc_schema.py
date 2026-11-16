@@ -52,6 +52,18 @@ class CBCRecord:
         wbc_count: Total White Blood Cell count (cells/mcL or /uL).
         platelet_count: Platelet count (cells/mcL or /uL).
         platelet_distribution_width: Platelet Distribution Width (PDW in % or fL).
+        rbc_count: Total Red Blood Cell count (million/mcL).
+        hematocrit: Hematocrit / Packed Cell Volume (PCV in %).
+        mcv: Mean Corpuscular Volume (fL).
+        mch: Mean Corpuscular Hemoglobin (pg).
+        mchc: Mean Corpuscular Hemoglobin Concentration (g/dL).
+        rdw_cv: Red Cell Distribution Width (%).
+        neutrophils: Differential Neutrophil percentage (%).
+        lymphocytes: Differential Lymphocyte percentage (%).
+        monocytes: Differential Monocyte percentage (%).
+        eosinophils: Differential Eosinophil percentage (%).
+        basophils: Differential Basophil percentage (%).
+        mpv: Mean Platelet Volume (fL).
     """
     age: Optional[float] = None
     gender: Optional[str] = None
@@ -59,10 +71,22 @@ class CBCRecord:
     wbc_count: Optional[float] = None
     platelet_count: Optional[float] = None
     platelet_distribution_width: Optional[float] = None
+    rbc_count: Optional[float] = None
+    hematocrit: Optional[float] = None
+    mcv: Optional[float] = None
+    mch: Optional[float] = None
+    mchc: Optional[float] = None
+    rdw_cv: Optional[float] = None
+    neutrophils: Optional[float] = None
+    lymphocytes: Optional[float] = None
+    monocytes: Optional[float] = None
+    eosinophils: Optional[float] = None
+    basophils: Optional[float] = None
+    mpv: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert the CBCRecord instance into a standard Python dictionary."""
-        return {
+        d = {
             "age": self.age,
             "gender": self.gender,
             "hemoglobin_g_dl": self.hemoglobin_g_dl,
@@ -70,6 +94,25 @@ class CBCRecord:
             "platelet_count": self.platelet_count,
             "platelet_distribution_width": self.platelet_distribution_width,
         }
+        # Add extended parameters if populated
+        extended = {
+            "rbc_count": self.rbc_count,
+            "hematocrit": self.hematocrit,
+            "mcv": self.mcv,
+            "mch": self.mch,
+            "mchc": self.mchc,
+            "rdw_cv": self.rdw_cv,
+            "neutrophils": self.neutrophils,
+            "lymphocytes": self.lymphocytes,
+            "monocytes": self.monocytes,
+            "eosinophils": self.eosinophils,
+            "basophils": self.basophils,
+            "mpv": self.mpv,
+        }
+        for k, v in extended.items():
+            if v is not None:
+                d[k] = v
+        return d
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CBCRecord":
@@ -81,6 +124,18 @@ class CBCRecord:
             wbc_count=data.get("wbc_count"),
             platelet_count=data.get("platelet_count"),
             platelet_distribution_width=data.get("platelet_distribution_width"),
+            rbc_count=data.get("rbc_count"),
+            hematocrit=data.get("hematocrit"),
+            mcv=data.get("mcv"),
+            mch=data.get("mch"),
+            mchc=data.get("mchc"),
+            rdw_cv=data.get("rdw_cv"),
+            neutrophils=data.get("neutrophils"),
+            lymphocytes=data.get("lymphocytes"),
+            monocytes=data.get("monocytes"),
+            eosinophils=data.get("eosinophils"),
+            basophils=data.get("basophils"),
+            mpv=data.get("mpv"),
         )
 
 
