@@ -32,6 +32,7 @@ Important Principles:
 """
 
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass, field
@@ -69,6 +70,9 @@ except ImportError:
 # DATA STRUCTURES
 # =============================================================================
 
+MIN_OCR_CONFIDENCE_THRESHOLD = 0.55  # Below this, extraction is marked uncertain
+
+
 @dataclass
 class ParsedCBCItem:
     """
@@ -84,6 +88,7 @@ class ParsedCBCItem:
         ref_min: Lower numeric fence of the report-specific reference range if available.
         ref_max: Upper numeric fence of the report-specific reference range if available.
         confidence: OCR recognition confidence score if provided by OCR engine.
+        is_uncertain: True if OCR confidence is below threshold or extraction is ambiguous.
     """
     canonical_name: str
     raw_test_name: str
@@ -94,6 +99,7 @@ class ParsedCBCItem:
     ref_min: Optional[float] = None
     ref_max: Optional[float] = None
     confidence: Optional[float] = None
+    is_uncertain: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize item to a Python dictionary."""
@@ -107,6 +113,7 @@ class ParsedCBCItem:
             "ref_min": self.ref_min,
             "ref_max": self.ref_max,
             "confidence": self.confidence,
+            "is_uncertain": self.is_uncertain,
         }
 
 
@@ -401,8 +408,9 @@ GREATER_THAN_REF_PATTERN = re.compile(
 # NUMERIC & OCR PATTERNS
 # =============================================================================
 
+# Matches numbers with optional commas, dots, and mixed OCR grouping
 NUMBER_PATTERN = re.compile(
-    r"(?<!\w)\d+(?:,\d+)*(?:\.\d+)?(?!\w)"
+    r"(?<!\w)\d+(?:[,\.]\d+)*(?!\w)"
 )
 
 STOP_LINE_PATTERNS = [
@@ -426,7 +434,8 @@ STOP_LINE_PATTERNS = [
 def clean_ocr_line(line: str) -> str:
     """
     Cleans raw OCR line by normalizing spaces, repairing split decimals
-    (e.g. '14 . 2' -> 14.2), and repairing spaced commas (e.g. '140 , 000' -> 140,000).
+    (e.g. '14 . 2' -> 14.2), repairing spaced commas (e.g. '140 , 000' -> 140,000),
+    and repairing Indian OCR comma-dot artifacts (e.g. '1.85,000' -> '1,85,000').
     """
     if not line:
         return ""
@@ -440,6 +449,9 @@ def clean_ocr_line(line: str) -> str:
     # Repair spaced commas: 140 , 000 -> 140,000
     text = re.sub(r"(\d+)\s*,\s*(\d+)", r"\1,\2", text)
 
+    # Repair Indian OCR comma-dot artifact: 1.85,000 -> 1,85,000
+    text = re.sub(r"\b(\d+)\.(\d{2}),(\d{3})\b", r"\1,\2,\3", text)
+
     return text.strip()
 
 
@@ -449,15 +461,37 @@ def clean_ocr_line(line: str) -> str:
 
 def parse_numeric_token(token: str) -> Optional[float]:
     """
-    Safely converts a numeric string with optional commas into a float.
-    Handles Western (210,000) and Indian (1,85,000) comma notations.
+    Safely converts a numeric string with optional commas/dots into a float.
+    Handles:
+        - Standard floats: '14.2' -> 14.2
+        - Split decimals: '14 . 2' -> 14.2
+        - Western comma notation: '210,000' -> 210000.0, '140,000' -> 140000.0
+        - Indian lakhs notation: '1,85,000' -> 185000.0
+        - Indian OCR comma-dot artifact: '1.85,000' -> 185000.0
+        - European whole thousand separators: '185.000' -> 185000.0
     """
     if not token:
         return None
 
-    cleaned = token.replace(",", "").strip()
+    cleaned = token.strip()
+    # Normalize internal spaces around decimals and commas
+    cleaned = re.sub(r"(\d+)\s*\.\s*(\d+)", r"\1.\2", cleaned)
+    cleaned = re.sub(r"(\d+)\s*,\s*(\d+)", r"\1,\2", cleaned)
+
+    # Handle Indian OCR comma-dot artifact: e.g. 1.85,000 -> 1,85,000
+    cleaned = re.sub(r"^(\d+)\.(\d{2}),(\d{3})$", r"\1,\2,\3", cleaned)
+
+    # Handle European whole thousand separator where count >= 1000 with exactly .000:
+    # e.g. '185.000' -> '185000', '140.000' -> '140000'
+    if re.match(r"^\d{2,4}\.000$", cleaned):
+        cleaned = cleaned.replace(".", "")
+
+    cleaned = cleaned.replace(",", "").strip()
     try:
-        return float(cleaned)
+        val = float(cleaned)
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return val
     except ValueError:
         return None
 
@@ -575,8 +609,8 @@ def find_test_parameter(
         if match:
             raw_name = match.group(0).strip()
             remaining = (text[:match.start()] + " " + text[match.end():]).strip()
-            # Clean leading colons, hyphens, or equals
-            remaining = re.sub(r"^[\s:=–—-]+", "", remaining).strip()
+            # Clean leading punctuation including trailing dots from acronyms (R.B.C. -> remaining: 5.12)
+            remaining = re.sub(r"^[\s.:=–—-]+", "", remaining).strip()
             return canonical_name, raw_name, remaining
 
     return None, None, text
