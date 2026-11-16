@@ -39,9 +39,9 @@ flowchart TD
     D --> E["📋 Structured CBC Schema<br/>(CBCRecord / ml/cbc_schema.py)"]
     E --> F["🛡️ Clinical Validation Firewall<br/>(ml/cbc_validator.py)"]
     
-    F -->|Physical Impossibility / Corruption| G["⚠️ Actionable Error & Retake Guidance"]
+    F -->|Physical Impossibility or Corruption| G["⚠️ Actionable Error & Retake Guidance"]
     F -->|Missing Parameters| H["ℹ️ Incomplete Report Flagging"]
-    F -->|Statistical Outlier (Beyond IQR)| I["🔍 Outlier Review State (Preserved for Doctor)"]
+    F -->|Statistical Outlier - Beyond IQR| I["🔍 Outlier Review State (Preserved for Doctor)"]
     F -->|Valid Observational Data| J["⚖️ Report Reference-Interval Comparator"]
     
     I --> J
@@ -81,7 +81,7 @@ graph TB
 
     Client -->|REST API Calls| Service
     Service --> CoreML
-    VALIDATOR -.->|Empirical Bounds & IQR Fences| DATASET
+    VALIDATOR -.->|Empirical Bounds and IQR Fences| DATASET
 ```
 
 ---
