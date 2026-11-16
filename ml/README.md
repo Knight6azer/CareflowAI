@@ -68,24 +68,37 @@ Universal reference ranges do not exist across all laboratories. Normal ranges v
 
 Hard-coding universal reference ranges creates false alarms or false reassurances. In future pipeline stages, reference ranges should be extracted directly from the reference interval column on the patient's own lab report whenever available.
 
-### E. How this Layer Connects to OCR and the FastAPI Backend
+### E. How this Layer Connects to OCR and the FastAPI Backend (`api.py`)
 1. **OCR Stage**: A user uploads an image/PDF. The OCR service parses the text and extracts key-value pairs into a Python dictionary.
 2. **Schema Ingestion**: The dictionary is converted into a `CBCRecord` via `CBCRecord.from_dict(...)`.
 3. **Validation**: `validate_cbc_record(...)` processes the record and produces a `CBCValidationResult`.
-4. **FastAPI Endpoint Integration**:
+4. **FastAPI Endpoint Integration (`api.py`)**:
    - `CBCRecord` and `CBCValidationResult` serialize directly to JSON using `.to_dict()`.
    - If the status is `INVALID`, FastAPI immediately returns an HTTP 422 with actionable guidance (e.g. "Blurry photo: please retake image with good lighting").
    - If `MISSING`, the frontend can prompt the user to confirm whether a specific test was ordered.
    - If `VALID` or `OUTLIER_REVIEW`, the payload proceeds safely to the report reference-range comparator and explanation engine.
+   - Live endpoints: `GET /api/health`, `POST /api/validate`, `POST /api/parse-text`, `POST /api/upload-report`.
 
 ---
 
-## 4. How to Run the Scripts
+## 4. How to Run the Scripts and Tests
+
+### Run the Full Python Test Suite:
+From the project root:
+```powershell
+python -m unittest discover tests
+```
 
 ### Run the CBC Validator & Built-in Test Suite:
 From the project root:
 ```powershell
 python ml/cbc_validator.py
+```
+
+### Run the CBC OCR Report Parser Verification Suite:
+From the project root:
+```powershell
+python ml/ocr/report_parser.py
 ```
 
 ### Run the Initial Dataset Quality Analysis:
@@ -94,4 +107,7 @@ From the project root:
 python ml/analyze_dataset.py
 ```
 
-*(Both scripts also run directly from within the `ml/` folder).*
+### Run the FastAPI Service:
+```powershell
+python -m uvicorn api:app --port 8000
+```
