@@ -123,11 +123,11 @@ CareFlow AI does not attempt black-box clinical diagnostics. Instead, it combine
 
 ### 2. Clinical Validation Firewall (`ml/cbc_validator.py`)
 - **Status Hierarchy**: `INVALID` > `MISSING` > `OUTLIER_REVIEW` > `VALID`.
-- **Absolute Biological Bounds**: Rejects physically impossible values (e.g. negative platelet counts, hemoglobin $> 26$ g/dL, or WBC $> 400,000$ /μL) as OCR errors or unit mismatches.
+- **Absolute Biological Bounds**: Rejects physically impossible values (e.g. negative platelet counts, hemoglobin > 26 g/dL, or WBC > 400,000 /μL) as OCR errors or unit mismatches.
 - **Biological Consistency Checks**:
-  - *Differential Sum Check*: Neutrophils + Lymphocytes + Monocytes + Eosinophils + Basophils must total approximately $100\%$ ($90\% - 110\%$ allowance for rounding).
-  - *Rule of Three*: In normocytic normochromic red cells, Hematocrit $(\%) \approx 3 \times \text{Hemoglobin (g/dL)} \pm 6\%$.
-- **IQR Statistical Outlier Preservation**: Values outside the empirical $1.5 \times IQR$ bounds are preserved and labeled `OUTLIER_REVIEW`, preventing acute clinical signals from being silently discarded.
+  - *Differential Sum Check*: Neutrophils + Lymphocytes + Monocytes + Eosinophils + Basophils must total approximately 100% (88% – 112% allowance for biological variance and rounding).
+  - *Rule of Three*: In normocytic normochromic red cells, Hematocrit (%) ≈ 3 × Hemoglobin (g/dL) ± 6% (expected HCT ≈ 3 × Hb; discrepancies > 16% flag an INVALID consistency violation).
+- **IQR Statistical Outlier Preservation**: Values outside the empirical 1.5 × IQR bounds are preserved and labeled `OUTLIER_REVIEW`, preventing acute clinical signals from being silently discarded.
 
 ### 3. Patient Health Literacy & Multilingual Translation
 - **Non-Diagnostic Summaries**: Replaces confusing medical jargon with plain-language explanations of biomarker roles.
