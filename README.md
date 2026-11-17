@@ -125,7 +125,7 @@ CareFlow AI does not attempt black-box clinical diagnostics. Instead, it combine
 - **Status Hierarchy**: `INVALID` > `MISSING` > `OUTLIER_REVIEW` > `VALID`.
 - **Absolute Biological Bounds**: Rejects physically impossible values (e.g. negative platelet counts, hemoglobin > 26 g/dL, or WBC > 400,000 /μL) as OCR errors or unit mismatches.
 - **Biological Consistency Checks**:
-  - *Differential Sum Check*: Neutrophils + Lymphocytes + Monocytes + Eosinophils + Basophils must total approximately 100% (88% – 112% allowance for biological variance and rounding).
+  - *Differential Sum Check*: Relative leukocyte percentages (Neutrophils + Lymphocytes + Monocytes + Eosinophils + Basophils) must mathematically conserve to 100% (an 88% – 112% tolerance window accommodates analyzer rounding, unextracted immature bands/blasts, and OCR noise; sums outside this range flag an INVALID consistency violation).
   - *Rule of Three*: In normocytic normochromic red cells, Hematocrit (%) ≈ 3 × Hemoglobin (g/dL) ± 6% (expected HCT ≈ 3 × Hb; discrepancies > 16% flag an INVALID consistency violation).
 - **IQR Statistical Outlier Preservation**: Values outside the empirical 1.5 × IQR bounds are preserved and labeled `OUTLIER_REVIEW`, preventing acute clinical signals from being silently discarded.
 
